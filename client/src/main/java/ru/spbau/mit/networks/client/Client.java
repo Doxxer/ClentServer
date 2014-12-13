@@ -82,7 +82,7 @@ public class Client implements Runnable {
 
     private ByteBuffer createMessage() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 50000000; i++) {
+        for (int i = 0; i < 50; i++) {
             sb.append("0");
         }
         return ByteBuffer.wrap(sb.toString().getBytes());
