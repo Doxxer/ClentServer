@@ -4,10 +4,10 @@ public class Main {
 //    private static final ArrayList<Thread> threads = new ArrayList<>();
 
     public static void main(String[] args) {
+        // socat -v tcp-l:8888,fork exec:'/bin/cat'
+
         String host = args[0];
         int port = Integer.valueOf(args[1]);
-
-//        new Client("192.168.0.105", port).run();
 
         new Client(host, port).run();
 

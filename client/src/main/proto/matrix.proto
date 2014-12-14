@@ -1,0 +1,7 @@
+option java_package = "ru.spbau.mit.networks.client";
+option java_outer_classname = "MatrixProtobufMessage";
+
+message Matrix {
+  required uint32 rows = 1;
+  repeated int32 data = 2 [packed=true];
+}

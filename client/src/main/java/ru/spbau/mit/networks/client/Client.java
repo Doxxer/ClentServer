@@ -14,12 +14,14 @@ import java.util.logging.Logger;
 public class Client implements Runnable {
     private final String hostname;
     private final int port;
+    private final MessageGenerator messageGenerator;
     private int counter;
 
     public Client(String host, int port) {
         this.hostname = host;
         this.port = port;
         this.counter = 0;
+        messageGenerator = new MessageGenerator();
     }
 
     @Override
@@ -37,10 +39,6 @@ public class Client implements Runnable {
                     SelectionKey key = iterator.next();
                     iterator.remove();
 
-                    if (!key.isValid()) {
-                        continue;
-                    }
-
                     if (key.isConnectable()) {
                         System.out.println(MessageFormat.format("{0}: connected to server", Thread.currentThread()));
                         try {
@@ -49,43 +47,71 @@ public class Client implements Runnable {
                             Logger.getGlobal().log(Level.WARNING, MessageFormat.format("Error occurred while connecting to socket in {0}", Thread.currentThread()));
                             throw e;
                         }
-                    }
-
-                    if (key.isWritable()) {
+                    } else if (key.isWritable()) {
                         try {
-                            write(key);
-                        } catch (IOException e) {
+                            write(key, selector);
+                        } catch (IOException | InterruptedException e) {
                             Logger.getGlobal().log(Level.WARNING, MessageFormat.format("Error occurred while writing to socket in {0}", Thread.currentThread()));
+                            throw e;
+                        }
+                    } else if (key.isReadable()) {
+                        try {
+                            read(key, selector);
+                        } catch (IOException e) {
+                            Logger.getGlobal().log(Level.WARNING, MessageFormat.format("Error occurred while reading from socket in {0}", Thread.currentThread()));
                             throw e;
                         }
                     }
                 }
             }
             System.out.println("Thread interrupted or nothing to select");
-        } catch (IOException e) {
+        } catch (Exception e) {
             Logger.getGlobal().log(Level.SEVERE, e.getMessage());
         }
     }
 
-    private void write(SelectionKey key) throws IOException {
+    private void read(SelectionKey key, Selector selector) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
-        ByteBuffer buffer = createMessage();
+
+        int messageLength = readFromChannel(channel, 4).getInt();
+        ByteBuffer message = readFromChannel(channel, messageLength);
+
+        messageGenerator.decode(message.array());
+
+        channel.register(selector, SelectionKey.OP_WRITE);
+    }
+
+    private ByteBuffer readFromChannel(SocketChannel channel, int size) throws IOException {
+        ByteBuffer sizeBuffer = ByteBuffer.allocate(size);
+        int length;
+        do {
+            length = channel.read(sizeBuffer);
+            if (length == -1) {
+                throw new IOException("server unreachable");
+            }
+        } while (length < size);
+        sizeBuffer.flip();
+        return sizeBuffer;
+    }
+
+    private void write(SelectionKey key, Selector selector) throws IOException, InterruptedException {
+        SocketChannel channel = (SocketChannel) key.channel();
+
+        byte[] message = messageGenerator.createMessage();
+
+        ByteBuffer buffer = ByteBuffer.allocate(message.length + 4);
+        buffer.putInt(message.length);
+        buffer.put(message);
+        buffer.position(0);
+
         int total = 0;
         while (buffer.hasRemaining()) {
             total += channel.write(buffer);
-            System.out.println(MessageFormat.format("{0}: sent {1}/{2} bytes ahead ({3})",
-                    Thread.currentThread(), total, buffer.capacity(), counter));
+            System.out.println(MessageFormat.format("{0}: sent {1}/{2} bytes ahead ({3})", Thread.currentThread(), total, buffer.capacity(), counter));
         }
         counter++;
-        buffer.clear();
-    }
-
-    private ByteBuffer createMessage() {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 50; i++) {
-            sb.append("0");
-        }
-        return ByteBuffer.wrap(sb.toString().getBytes());
+        channel.register(selector, SelectionKey.OP_READ);
+        Thread.sleep(1000);
     }
 
     private void connect(SelectionKey key, Selector selector) throws IOException {
