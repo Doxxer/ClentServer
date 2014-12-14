@@ -14,14 +14,14 @@ import java.util.logging.Logger;
 public class Client implements Runnable {
     private final String hostname;
     private final int port;
-    private final MessageGenerator messageGenerator;
+    private final MessageController messageGenerator;
     private int counter;
 
     public Client(String host, int port) {
         this.hostname = host;
         this.port = port;
         this.counter = 0;
-        messageGenerator = new MessageGenerator();
+        messageGenerator = new MessageController();
     }
 
     @Override
@@ -70,6 +70,15 @@ public class Client implements Runnable {
         }
     }
 
+    private void connect(SelectionKey key, Selector selector) throws IOException {
+        SocketChannel channel = (SocketChannel) key.channel();
+        if (channel.isConnectionPending()) {
+            channel.finishConnect();
+        }
+        channel.configureBlocking(false);
+        channel.register(selector, SelectionKey.OP_WRITE);
+    }
+
     private void read(SelectionKey key, Selector selector) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
 
@@ -79,6 +88,18 @@ public class Client implements Runnable {
         messageGenerator.decode(message.array());
 
         channel.register(selector, SelectionKey.OP_WRITE);
+    }
+
+    private void write(SelectionKey key, Selector selector) throws IOException, InterruptedException {
+        SocketChannel channel = (SocketChannel) key.channel();
+
+        byte[] message = messageGenerator.createMessage();
+
+        int sentBytes = writeToChannel(channel, message);
+        counter++;
+        channel.register(selector, SelectionKey.OP_READ);
+        System.out.println(MessageFormat.format("[thread {0}]: sent {1} bytes (message #{2})", Thread.currentThread().getId(), sentBytes, counter));
+//        Thread.sleep(Thread.currentThread().getId() * 20);
     }
 
     private ByteBuffer readFromChannel(SocketChannel channel, int size) throws IOException {
@@ -94,32 +115,16 @@ public class Client implements Runnable {
         return sizeBuffer;
     }
 
-    private void write(SelectionKey key, Selector selector) throws IOException, InterruptedException {
-        SocketChannel channel = (SocketChannel) key.channel();
-
-        byte[] message = messageGenerator.createMessage();
-
+    private int writeToChannel(SocketChannel channel, byte[] message) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(message.length + 4);
         buffer.putInt(message.length);
         buffer.put(message);
         buffer.position(0);
 
-        int total = 0;
+        int sentBytes = 0;
         while (buffer.hasRemaining()) {
-            total += channel.write(buffer);
-            System.out.println(MessageFormat.format("{0}: sent {1}/{2} bytes ahead ({3})", Thread.currentThread(), total, buffer.capacity(), counter));
+            sentBytes += channel.write(buffer);
         }
-        counter++;
-        channel.register(selector, SelectionKey.OP_READ);
-        Thread.sleep(1000);
-    }
-
-    private void connect(SelectionKey key, Selector selector) throws IOException {
-        SocketChannel channel = (SocketChannel) key.channel();
-        if (channel.isConnectionPending()) {
-            channel.finishConnect();
-        }
-        channel.configureBlocking(false);
-        channel.register(selector, SelectionKey.OP_WRITE);
+        return sentBytes;
     }
 }
