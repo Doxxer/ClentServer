@@ -40,7 +40,7 @@ public class Client implements Runnable {
                     iterator.remove();
 
                     if (key.isConnectable()) {
-                        System.out.println(MessageFormat.format("{0}: connected to server", Thread.currentThread()));
+                        System.out.println(MessageFormat.format("{0}: connected to server", Thread.currentThread().getId()));
                         try {
                             connect(key, selector);
                         } catch (IOException e) {
@@ -75,7 +75,6 @@ public class Client implements Runnable {
         if (channel.isConnectionPending()) {
             channel.finishConnect();
         }
-        channel.configureBlocking(false);
         channel.register(selector, SelectionKey.OP_WRITE);
     }
 
