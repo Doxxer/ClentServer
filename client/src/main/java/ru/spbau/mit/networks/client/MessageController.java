@@ -12,7 +12,7 @@ public class MessageController {
     private Random random = new Random();
 
     public byte[] createMessage() {
-        int size = random.nextInt(10) + 2;
+        int size = random.nextInt(100) + 200;
         ArrayList<Integer> data = new ArrayList<>();
         for (int i = 0; i < size * size; i++) {
             data.add(random.nextInt(100));

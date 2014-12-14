@@ -103,13 +103,14 @@ public class Client implements Runnable {
 
     private ByteBuffer readFromChannel(SocketChannel channel, int size) throws IOException {
         ByteBuffer sizeBuffer = ByteBuffer.allocate(size);
-        int length;
+        int readBytes = 0;
         do {
-            length = channel.read(sizeBuffer);
+            int length = channel.read(sizeBuffer);
             if (length == -1) {
                 throw new IOException("server unreachable");
             }
-        } while (length < size);
+            readBytes += length;
+        } while (readBytes < size);
         sizeBuffer.flip();
         return sizeBuffer;
     }

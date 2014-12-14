@@ -68,7 +68,7 @@
                     <arguments>
                         <argument>127.0.0.1</argument>
                         <argument>8888</argument>
-                        <argument>16</argument>
+                        <argument>1</argument>
                     </arguments>
                 </configuration>
             </plugin>
