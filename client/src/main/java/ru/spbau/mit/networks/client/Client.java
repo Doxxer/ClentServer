@@ -2,7 +2,6 @@ package ru.spbau.mit.networks.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -13,34 +12,34 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Client implements Runnable {
-    public static AtomicInteger totalSentMessages = new AtomicInteger(0);
+    public static final AtomicInteger totalSentMessages = new AtomicInteger(0);
 
     private final String hostname;
     private final int port;
-    private final MessageController messageGenerator;
+    private final ServerAction connector, writer, reader;
     private int counter;
-    private boolean connectionFailed = false;
-    private boolean writingFailed = false;
 
-    public Client(String host, int port) {
+    public Client(String host, int port, MessageGenerator messageGenerator) {
         this.hostname = host;
         this.port = port;
         this.counter = 0;
-        messageGenerator = new MessageController();
+
+        connector = new ConnectToServer("connecting", SelectionKey.OP_WRITE);
+        writer = new WriteToServer("writing", SelectionKey.OP_READ, messageGenerator);
+        reader = new ReadFromServer("reading", SelectionKey.OP_WRITE, messageGenerator);
     }
 
     @Override
     public void run() {
         try {
             while (!Thread.interrupted()) {
-                try (SocketChannel clientChannel = SocketChannel.open();
-                     Selector selector = Selector.open()) {
+                try (SocketChannel clientChannel = SocketChannel.open(); Selector selector = Selector.open()) {
                     clientChannel.configureBlocking(false);
                     clientChannel.connect(new InetSocketAddress(hostname, port));
                     clientChannel.register(selector, SelectionKey.OP_CONNECT);
 
-                    while (readWriteFromSocket(selector)) {
-
+                    while (interactWithServer(selector)) {
+//                        Thread.sleep(200);
                     }
                 }
             }
@@ -49,27 +48,7 @@ public class Client implements Runnable {
         }
     }
 
-    //    @Override
-//    public void run() {
-//        try {
-//            while (!Thread.interrupted()) {
-//                try (SocketChannel clientChannel = SocketChannel.open();
-//                     Selector selector = Selector.open()) {
-//                    clientChannel.configureBlocking(false);
-//                    clientChannel.connect(new InetSocketAddress(hostname, port));
-//                    clientChannel.register(selector, SelectionKey.OP_CONNECT);
-//
-//                    readWriteFromSocket(selector);
-//                    readWriteFromSocket(selector);
-//                    readWriteFromSocket(selector);
-//                }
-//            }
-//        } catch (Exception e) {
-//            Logger.getGlobal().log(Level.SEVERE, e.getMessage());
-//        }
-//    }
-//
-    private boolean readWriteFromSocket(Selector selector) throws IOException, InterruptedException {
+    private boolean interactWithServer(Selector selector) throws IOException {
         if (selector.select(500) <= 0) {
             return false;
         }
@@ -83,102 +62,43 @@ public class Client implements Runnable {
             if (!key.isValid()) {
                 continue;
             }
-
             if (key.isConnectable()) {
-                try {
-                    connect(key, selector);
-                    if (connectionFailed) {
-                        connectionFailed = false;
-                        Logger.getGlobal().log(Level.INFO, MessageFormat.format("[thread {0}]: connection OK", Thread.currentThread().getId()));
-                    }
-                } catch (IOException e) {
-                    if (!connectionFailed) {
-                        connectionFailed = true;
-                        Logger.getGlobal().log(Level.WARNING, MessageFormat.format("[thread {0}]: connection FAILED", Thread.currentThread().getId()));
-                    }
-                }
+                connector.makeAction(key, selector);
             } else if (key.isWritable()) {
-                try {
-                    write(key, selector);
-                    if (writingFailed) {
-                        writingFailed = false;
-                        Logger.getGlobal().log(Level.INFO, MessageFormat.format("[thread {0}]: writing OK", Thread.currentThread().getId()));
-                    }
-                } catch (IOException | InterruptedException e) {
-                    if (!writingFailed) {
-                        writingFailed = true;
-                        Logger.getGlobal().log(Level.WARNING, MessageFormat.format("[thread {0}]: writing FAILED", Thread.currentThread().getId()));
+                int sentBytes = writer.makeAction(key, selector);
+                if (sentBytes != -1) {
+                    counter++;
+                    totalSentMessages.incrementAndGet();
+                    if (counter % 100 == 0) {
+                        System.out.println(MessageFormat.format("[thread {0}]: sent message #{1} ({2} bytes)",
+                                Thread.currentThread().getId(), counter, sentBytes));
                     }
                 }
             } else if (key.isReadable()) {
-                try {
-                    read(key, selector);
-                } catch (IOException e) {
-                    Logger.getGlobal().log(Level.WARNING, MessageFormat.format("[thread {0}]: reading FAILED", Thread.currentThread().getId()));
-                    throw e;
-                }
+                reader.makeAction(key, selector);
             }
         }
         return true;
     }
 
-    private void connect(SelectionKey key, Selector selector) throws IOException {
-        SocketChannel channel = (SocketChannel) key.channel();
-        if (channel.isConnectionPending()) {
-            channel.finishConnect();
-        }
-        channel.register(selector, SelectionKey.OP_WRITE);
-    }
-
-    private void read(SelectionKey key, Selector selector) throws IOException {
-        SocketChannel channel = (SocketChannel) key.channel();
-
-        int messageLength = readFromChannel(channel, 4).getInt();
-        ByteBuffer message = readFromChannel(channel, messageLength);
-
-        messageGenerator.decode(message.array());
-
-        channel.register(selector, SelectionKey.OP_WRITE);
-    }
-
-    private void write(SelectionKey key, Selector selector) throws IOException, InterruptedException {
-        SocketChannel channel = (SocketChannel) key.channel();
-
-        byte[] message = messageGenerator.getMessage();
-
-        int sentBytes = writeToChannel(channel, message);
-        counter++;
-        totalSentMessages.incrementAndGet();
-        channel.register(selector, SelectionKey.OP_READ);
-//        if (counter % 100 == 0) {
-//            System.out.println(MessageFormat.format("[thread {0}]: sent {1} bytes (message #{2})", Thread.currentThread().getId(), sentBytes, counter));
+//    @Override
+//    public void run() {
+//        try {
+//            while (!Thread.interrupted()) {
+//                try (SocketChannel clientChannel = SocketChannel.open();
+//                     Selector selector = Selector.open()) {
+//                    clientChannel.configureBlocking(false);
+//                    clientChannel.connect(new InetSocketAddress(hostname, port));
+//                    clientChannel.register(selector, SelectionKey.OP_CONNECT);
+//                    interactWithServer(selector);
+//                    interactWithServer(selector);
+//                    interactWithServer(selector);
+//                }
+//            }
+//        } catch (Exception e) {
+//            Logger.getGlobal().log(Level.SEVERE, e.createRequest());
 //        }
-    }
+//    }
+//
 
-    private ByteBuffer readFromChannel(SocketChannel channel, int size) throws IOException {
-        ByteBuffer sizeBuffer = ByteBuffer.allocate(size);
-        int readBytes = 0;
-        do {
-            int length = channel.read(sizeBuffer);
-            if (length == -1) {
-                throw new IOException("server unreachable");
-            }
-            readBytes += length;
-        } while (readBytes < size);
-        sizeBuffer.flip();
-        return sizeBuffer;
-    }
-
-    private int writeToChannel(SocketChannel channel, byte[] message) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(message.length + 4);
-        buffer.putInt(message.length);
-        buffer.put(message);
-        buffer.position(0);
-
-        int sentBytes = 0;
-        while (buffer.hasRemaining()) {
-            sentBytes += channel.write(buffer);
-        }
-        return sentBytes;
-    }
 }

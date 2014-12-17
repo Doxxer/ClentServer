@@ -69,6 +69,7 @@
                         <argument>127.0.0.1</argument>
                         <argument>8888</argument>
                         <argument>128</argument>
+                        <argument>50</argument>
                     </arguments>
                 </configuration>
             </plugin>

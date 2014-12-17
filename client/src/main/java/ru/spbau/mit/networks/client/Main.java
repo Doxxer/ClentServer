@@ -12,17 +12,18 @@ public class Main {
         String host = args[0];
         int port = Integer.valueOf(args[1]);
         int threadsCount = Integer.valueOf(args[2]);
+        int matrixSize = Integer.valueOf(args[3]);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            synchronized (threads) {
-                threads.forEach(Thread::interrupt);
-            }
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> threads.forEach(Thread::interrupt)));
+
+        MessageGenerator messageGenerator = new MatrixMessageGenerator(matrixSize);
+
         for (int i = 0; i < threadsCount; i++) {
-            Thread thread = new Thread(new Client(host, port));
+            Thread thread = new Thread(new Client(host, port, messageGenerator));
             threads.add(thread);
             thread.start();
         }
+
         Thread totalMessagesSent = new Thread(() -> {
             int oldSent = Client.totalSentMessages.get();
             while (!Thread.interrupted()) {
