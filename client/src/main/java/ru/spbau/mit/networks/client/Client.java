@@ -19,14 +19,15 @@ public class Client implements Runnable {
     private final ServerAction connector, writer, reader;
     private int counter;
 
-    public Client(String host, int port, MessageGenerator messageGenerator) {
+    public Client(String host, int port, int messageSize) {
         this.hostname = host;
         this.port = port;
         this.counter = 0;
 
-        connector = new ConnectToServer("connecting", SelectionKey.OP_WRITE);
-        writer = new WriteToServer("writing", SelectionKey.OP_READ, messageGenerator);
-        reader = new ReadFromServer("reading", SelectionKey.OP_WRITE, messageGenerator);
+        MessageGenerator messageGenerator = new MatrixMessageGenerator(messageSize);
+        connector = new ConnectToServer("connecting", SelectionKey.OP_WRITE, SelectionKey.OP_CONNECT);
+        writer = new WriteToServer("writing", SelectionKey.OP_READ, SelectionKey.OP_CONNECT, messageGenerator);
+        reader = new ReadFromServer("reading", SelectionKey.OP_WRITE, SelectionKey.OP_CONNECT, messageGenerator);
     }
 
     @Override

@@ -7,8 +7,8 @@ import java.nio.channels.SocketChannel;
 
 public class ConnectToServer extends ServerAction {
 
-    public ConnectToServer(String actionName, int nextSocketState) {
-        super(actionName, nextSocketState);
+    public ConnectToServer(String actionName, int nextSocketState, int failingSocketState) {
+        super(actionName, nextSocketState, failingSocketState);
     }
 
     @Override

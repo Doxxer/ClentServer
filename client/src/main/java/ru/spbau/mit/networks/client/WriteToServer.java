@@ -9,19 +9,23 @@ import java.nio.channels.SocketChannel;
 public class WriteToServer extends ServerAction {
     private final MessageGenerator messageGenerator;
 
-    public WriteToServer(String actionName, int nextSocketState, MessageGenerator messageGenerator) {
-        super(actionName, nextSocketState);
+    public WriteToServer(String actionName, int nextSocketState, int failingSocketState, MessageGenerator messageGenerator) {
+        super(actionName, nextSocketState, failingSocketState);
         this.messageGenerator = messageGenerator;
     }
 
     @Override
     protected int makeSocketAction(SelectionKey key, Selector selector) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
+        try {
+            int sentBytes = writeToChannel(channel, messageGenerator.createRequest());
+            channel.register(selector, nextSocketState);
 
-        int sentBytes = writeToChannel(channel, messageGenerator.createRequest());
-        channel.register(selector, nextSocketState);
-
-        return sentBytes;
+            return sentBytes;
+        } catch (IOException e) {
+            channel.register(selector, failingSocketState);
+            throw e;
+        }
     }
 
     private int writeToChannel(SocketChannel channel, byte[] message) throws IOException {

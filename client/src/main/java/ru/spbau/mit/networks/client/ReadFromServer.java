@@ -9,23 +9,25 @@ import java.nio.channels.SocketChannel;
 public class ReadFromServer extends ServerAction {
     private final MessageGenerator messageGenerator;
 
-    public ReadFromServer(String actionName, int nextSocketState, MessageGenerator messageGenerator) {
-        super(actionName, nextSocketState);
+    public ReadFromServer(String actionName, int nextSocketState, int failingSocketState, MessageGenerator messageGenerator) {
+        super(actionName, nextSocketState, failingSocketState);
         this.messageGenerator = messageGenerator;
     }
 
     @Override
     protected int makeSocketAction(SelectionKey key, Selector selector) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
+        try {
+            int messageLength = readFromChannel(channel, 4).getInt();
+            ByteBuffer message = readFromChannel(channel, messageLength);
+            messageGenerator.checkServerResponse(message.array());
+            channel.register(selector, nextSocketState);
 
-        int messageLength = readFromChannel(channel, 4).getInt();
-        ByteBuffer message = readFromChannel(channel, messageLength);
-
-        messageGenerator.checkServerResponse(message.array());
-
-        channel.register(selector, nextSocketState);
-
-        return messageLength + 4;
+            return messageLength + 4;
+        } catch (IOException e) {
+            channel.register(selector, failingSocketState);
+            throw e;
+        }
     }
 
     private ByteBuffer readFromChannel(SocketChannel channel, int size) throws IOException {

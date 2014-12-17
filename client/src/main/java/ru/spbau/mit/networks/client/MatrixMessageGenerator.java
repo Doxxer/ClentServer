@@ -11,7 +11,7 @@ public class MatrixMessageGenerator implements MessageGenerator {
     private final Object lock = new Object();
     private final int matrixSize;
     private final Random random = new Random();
-    private volatile byte[] clientData = null;
+    private byte[] clientData = null;
 
     public MatrixMessageGenerator(int matrixSize) {
         this.matrixSize = matrixSize;
@@ -20,11 +20,7 @@ public class MatrixMessageGenerator implements MessageGenerator {
     @Override
     public byte[] createRequest() {
         if (clientData == null) {
-            synchronized (lock) {
-                if (clientData == null) {
-                    createMatrix();
-                }
-            }
+            createMatrix();
         }
         return clientData;
     }
@@ -47,12 +43,11 @@ public class MatrixMessageGenerator implements MessageGenerator {
             Jama.Matrix serverMatrix = getMatrix(serverMessage);
             Jama.Matrix clientMatrix = getMatrix(clientData);
 
-//            int size = serverMatrix.getRowDimension();
 //            System.out.println(almostIdentity(serverMatrix.inverse().times(clientMatrix).minus(Jama.Matrix.identity(size, size))));
 
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
-//            System.exit(1);
+            System.exit(1);
         }
     }
 

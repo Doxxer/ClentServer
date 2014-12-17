@@ -16,10 +16,8 @@ public class Main {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> threads.forEach(Thread::interrupt)));
 
-        MessageGenerator messageGenerator = new MatrixMessageGenerator(matrixSize);
-
         for (int i = 0; i < threadsCount; i++) {
-            Thread thread = new Thread(new Client(host, port, messageGenerator));
+            Thread thread = new Thread(new Client(host, port, matrixSize));
             threads.add(thread);
             thread.start();
         }
