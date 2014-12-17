@@ -1,18 +1,21 @@
 package ru.spbau.mit.networks.server;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
 
 
 public class Main {
     public static void main(String[] args) {
         try {
-            if (args.length != 1) {
-                printMessageAndExit("Required argument: port");
+            if (args.length != 2) {
+                printMessageAndExit(
+                        "Required arguments: port, number of threads");
             }
             final int port = Integer.parseInt(args[0]);
-            new Server(port).run();
+            final int nThread = Integer.parseInt(args[1]);
+            new Server(port, Executors.newFixedThreadPool(nThread)).serve();
         } catch (NumberFormatException e) {
-            printMessageAndExit("Port must be an integer");
+            printMessageAndExit("Couldn't parse arguments");
         } catch (IOException e) {
             printMessageAndExit("Error: " + e.getMessage());
         }

@@ -6,33 +6,41 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 
 public class Server {
+    public static final int MAX_WAITING_TIME = 100;
     public static final int BUFFER_CAPACITY = 4096;
     private static final Logger logger = Logger.getLogger(Server.class.getName());
 
     private final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
     private final ServerSocketChannel acceptor = ServerSocketChannel.open();
     private final Selector selector = Selector.open();
-    private Map<SocketChannel, ResizableByteBuffer> receivedData = new HashMap<>();
+    private final DataHolder dataHolder = new DataHolder();
+    private final ExecutorService executor;
 
-    public Server(int port) throws IOException {
+    public Server(int port, ExecutorService executor)
+            throws IOException {
+        this.executor = executor;
         acceptor.socket().bind(new InetSocketAddress(port));
         acceptor.configureBlocking(false);
         acceptor.register(selector, SelectionKey.OP_ACCEPT);
     }
 
-    public void run() {
+    public void serve() {
         while (true) {
             final int selected;
             try {
-                selected = selector.select();
+                selected = selector.select(MAX_WAITING_TIME);
             } catch (IOException e) {
-                logger.warning("Critical error: couldn't perform selection");
+                logger.severe("Critical error: couldn't perform selection");
                 return;
             }
+
+            processPerformedTasks();
+
             if (selected == 0) {
                 continue;
             }
@@ -48,7 +56,7 @@ public class Server {
                 } else if (key.isReadable()) {
                     processReadable(key);
                 } else if (key.isWritable()) {
-                    processWritable();
+                    processWritable(key);
                 }
                 iterator.remove();
             }
@@ -56,16 +64,37 @@ public class Server {
 
     }
 
-    private void processWritable() {
-        System.err.println("Writable");
+    private void processWritable(SelectionKey key) {
+        final SocketChannel channel;
+        channel = (SocketChannel) key.channel();
+        final ByteBuffer buffer = dataHolder.getWriterBuffer(channel);
+
+        while (buffer.hasRemaining()) {
+            final int byteCount;
+            try {
+                byteCount = channel.write(buffer);
+            } catch (IOException e) {
+                logger.warning("Writing error: " + e.getMessage());
+                closeConnection(channel);
+                return;
+            }
+
+            logger.fine("Sent " + byteCount + " bytes to " + channel);
+
+            if (byteCount == 0) {
+                break;
+            }
+        }
+
+        if (!buffer.hasRemaining()) {
+            logger.fine("Connection " + channel + " is closed");
+            closeConnection(channel);
+        }
     }
 
     private void processReadable(SelectionKey key) {
         final SocketChannel channel;
         channel = (SocketChannel) key.channel();
-        final ResizableByteBuffer resizableBuffer;
-        resizableBuffer = receivedData.get(channel);
-        assert resizableBuffer != null;
 
         while (true) {
             final int byteCount;
@@ -73,30 +102,25 @@ public class Server {
                 byteCount = channel.read(buffer);
             } catch (IOException e) {
                 logger.warning("Reading error: " + e.getMessage());
-                closeSocket(channel.socket());
-                receivedData.remove(channel);
+                closeConnection(channel);
                 break;
             }
             if (byteCount < 0) {
-                closeSocket(channel.socket());
-                byte[] bytes = resizableBuffer.getDataCopy();
-                for (byte b: bytes) {
-                    System.out.print((char) b);
-                }
-                System.out.println();
-                receivedData.remove(channel);
-                break;
+                buffer.clear();
+                closeConnection(channel);
+                return;
             }
             if (byteCount == 0) {
                 break;
             }
 
             buffer.flip();
-            resizableBuffer.moveBytes(buffer);
+            dataHolder.moveReceivedData(channel, buffer);
             buffer.flip();
         }
-
         buffer.clear();
+
+        processReceivedData(channel);
     }
 
     private void processConnectable() {
@@ -116,11 +140,85 @@ public class Server {
             SocketChannel channel = socket.getChannel();
             channel.configureBlocking(false);
             channel.register(selector, SelectionKey.OP_READ);
-            receivedData.put(channel, new ResizableByteBuffer());
+            dataHolder.registerReceiver(channel);
+            logger.fine("Accepted " + channel);
         } catch (IOException e) {
             logger.warning("Channel error: " + e.getMessage());
             closeSocket(socket);
         }
+    }
+
+    private void processReceivedData(SocketChannel channel) {
+        Integer required = dataHolder.getFirstReceivedInteger(channel);
+        int received = dataHolder.getReceivedByteCount(channel);
+
+        if (required == null || received < required) {
+            return;
+        }
+
+        logger.fine(
+                "Received " + received  + " bytes from " + channel
+                + "; required " + required + " bytes");
+
+        if (required + Integer.BYTES < received) {
+            logger.warning("Received too much data from " + channel);
+            closeConnection(channel);
+            return;
+        }
+
+        try {
+            channel.register(selector, 0);
+        } catch (ClosedChannelException e) {
+            logger.warning("Channel " + channel + " is unexpectedly closed");
+            return;
+        }
+
+        Future<byte[]> future = executor.submit(new Worker(
+                dataHolder.extractReceivedData(channel),
+                dataHolder.createNotifier(channel, selector)));
+        dataHolder.registerWorker(channel, future);
+    }
+
+    private void processPerformedTasks() {
+        while (true) {
+            byte[] data = null;
+            SocketChannel channel = null;
+            try {
+                Pair<byte[], SocketChannel> p = dataHolder.getProcessedData();
+                if (p != null) {
+                    data = p.first;
+                    channel = p.second;
+                }
+            } catch (WorkerException e) {
+                logger.warning("Worker error: " + e.getMessage());
+                closeConnection(e.getChannel());
+                continue;
+            }
+            if (data == null) {
+                return;
+            }
+
+            try {
+                channel.register(selector, SelectionKey.OP_WRITE);
+            } catch (ClosedChannelException e) {
+                logger.warning(
+                        "Channel " + channel + " is unexpectedly closed");
+                continue;
+            }
+
+            logger.fine("Task for " + channel + "is performed");
+            dataHolder.registerWriter(channel, data);
+        }
+    }
+
+    private void closeConnection(SocketChannel channel) {
+        try {
+            channel.close();
+        } catch (IOException e) {
+            logger.warning("Connection closing error " + e.getMessage());
+        }
+        dataHolder.unregisterReceiver(channel);
+        dataHolder.unregisterWriter(channel);
     }
 
     private void closeSocket(Socket socket) {
