@@ -69,8 +69,8 @@
                         <!--<argument>192.168.0.106</argument>-->
                         <argument>127.0.0.1</argument>
                         <argument>8888</argument>
-                        <argument>1</argument>
-                        <argument>100</argument>
+                        <argument>64</argument>
+                        <argument>200</argument>
                     </arguments>
                 </configuration>
             </plugin>

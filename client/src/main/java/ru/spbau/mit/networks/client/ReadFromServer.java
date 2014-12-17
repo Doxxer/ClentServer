@@ -22,8 +22,7 @@ public class ReadFromServer extends ServerAction {
             ByteBuffer message = readFromChannel(channel, messageLength);
             messageController.checkServerResponse(message.array());
             channel.register(selector, nextSocketState);
-
-            return messageLength + 4;
+            return -1;
         } catch (IOException e) {
             channel.register(selector, failingSocketState);
             throw e;

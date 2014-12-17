@@ -50,7 +50,7 @@ public class Client implements Runnable {
     }
 
     private boolean interactWithServer(Selector selector) throws IOException {
-        int selectResult = selector.selectNow();
+        int selectResult = selector.select(500);
         if (selectResult <= 0) {
             return selectResult == 0;
         }
@@ -77,7 +77,7 @@ public class Client implements Runnable {
                     }
                 }
             } else if (key.isReadable()) {
-                reader.makeAction(key, selector);
+                return reader.makeAction(key, selector) != -1;
             }
         }
         return true;

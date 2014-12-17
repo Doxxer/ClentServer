@@ -1,6 +1,7 @@
 package ru.spbau.mit.networks.client;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.text.MessageFormat;
@@ -17,10 +18,10 @@ public abstract class ServerAction {
         this.actionFailed = false;
         this.actionName = actionName;
         this.nextSocketState = nextSocketState;
-        this.failingSocketState = 0;
+        this.failingSocketState = failingSocketState;
     }
 
-    public int makeAction(SelectionKey key, Selector selector) {
+    public int makeAction(SelectionKey key, Selector selector) throws ConnectException {
         try {
             int result = makeSocketAction(key, selector);
             if (actionFailed) {
@@ -28,6 +29,8 @@ public abstract class ServerAction {
                 Logger.getGlobal().log(Level.INFO, MessageFormat.format("[thread {0}]: {1} OK", Thread.currentThread().getId(), actionName));
             }
             return result;
+        } catch (ConnectException e) {
+            throw e;
         } catch (IOException e) {
             if (!actionFailed) {
                 actionFailed = true;

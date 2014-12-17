@@ -36,6 +36,7 @@ public class Main {
             }
         });
 
+        totalMessagesSent.setDaemon(true);
         threads.add(totalMessagesSent);
         totalMessagesSent.start();
     }

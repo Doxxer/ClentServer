@@ -3,6 +3,7 @@ package ru.spbau.mit.networks.client;
 import com.google.protobuf.InvalidProtocolBufferException;
 import ru.spbau.mit.networks.client.MatrixProtobufMessage.Matrix;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -37,13 +38,14 @@ public class MatrixMessageController implements MessageController {
     }
 
     @Override
-    public void checkServerResponse(byte[] serverMessage) {
+    public void checkServerResponse(byte[] serverMessage) throws IOException {
         try {
             Jama.Matrix serverMatrix = getMatrix(serverMessage);
             Jama.Matrix clientMatrix = getMatrix(clientData);
 
-            System.out.println(almostIdentity(serverMatrix.inverse().times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize))));
-
+            if (!almostIdentity(serverMatrix.inverse().times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize)))) {
+                throw new IOException("Wrong matrix response: input != output");
+            }
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
             System.exit(1);
