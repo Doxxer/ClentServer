@@ -7,13 +7,12 @@ import java.util.ArrayList;
 import java.util.Random;
 
 
-public class MatrixMessageGenerator implements MessageGenerator {
-    private final Object lock = new Object();
+public class MatrixMessageController implements MessageController {
     private final int matrixSize;
     private final Random random = new Random();
     private byte[] clientData = null;
 
-    public MatrixMessageGenerator(int matrixSize) {
+    public MatrixMessageController(int matrixSize) {
         this.matrixSize = matrixSize;
     }
 
@@ -43,7 +42,7 @@ public class MatrixMessageGenerator implements MessageGenerator {
             Jama.Matrix serverMatrix = getMatrix(serverMessage);
             Jama.Matrix clientMatrix = getMatrix(clientData);
 
-//            System.out.println(almostIdentity(serverMatrix.inverse().times(clientMatrix).minus(Jama.Matrix.identity(size, size))));
+            System.out.println(almostIdentity(serverMatrix.inverse().times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize))));
 
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
@@ -51,22 +50,20 @@ public class MatrixMessageGenerator implements MessageGenerator {
         }
     }
 
-// --Commented out by Inspection START (17.12.14, 22:28):
-//    private boolean almostIdentity(Jama.Matrix a) {
-//        final double epsilon = 1e-8;
-//        int rows = a.getRowDimension();
-//        int columns = a.getColumnDimension();
-//        for (int c = 0; c < columns; c++) {
-//            for (int r = 0; r < rows; r++) {
-//                double ea = a.get(r, c);
-//                if (Math.abs(ea) >= epsilon) {
-//                    return false;
-//                }
-//            }
-//        }
-//        return true;
-//    }
-// --Commented out by Inspection STOP (17.12.14, 22:28)
+    private boolean almostIdentity(Jama.Matrix a) {
+        final double epsilon = 1e-8;
+        int rows = a.getRowDimension();
+        int columns = a.getColumnDimension();
+        for (int c = 0; c < columns; c++) {
+            for (int r = 0; r < rows; r++) {
+                double ea = a.get(r, c);
+                if (Math.abs(ea) >= epsilon) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
     private Jama.Matrix getMatrix(byte[] data) throws InvalidProtocolBufferException {
         Matrix matrix = Matrix.parseFrom(data);

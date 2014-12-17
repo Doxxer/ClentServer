@@ -1,6 +1,6 @@
 package ru.spbau.mit.networks.client;
 
-public interface MessageGenerator {
+public interface MessageController {
     byte[] createRequest();
 
     void checkServerResponse(byte[] serverMessage);

@@ -7,20 +7,19 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 public class WriteToServer extends ServerAction {
-    private final MessageGenerator messageGenerator;
+    private final MessageController messageController;
 
-    public WriteToServer(String actionName, int nextSocketState, int failingSocketState, MessageGenerator messageGenerator) {
+    public WriteToServer(String actionName, int nextSocketState, int failingSocketState, MessageController messageController) {
         super(actionName, nextSocketState, failingSocketState);
-        this.messageGenerator = messageGenerator;
+        this.messageController = messageController;
     }
 
     @Override
     protected int makeSocketAction(SelectionKey key, Selector selector) throws IOException {
         SocketChannel channel = (SocketChannel) key.channel();
         try {
-            int sentBytes = writeToChannel(channel, messageGenerator.createRequest());
+            int sentBytes = writeToChannel(channel, messageController.createRequest());
             channel.register(selector, nextSocketState);
-
             return sentBytes;
         } catch (IOException e) {
             channel.register(selector, failingSocketState);

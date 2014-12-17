@@ -24,10 +24,10 @@ public class Client implements Runnable {
         this.port = port;
         this.counter = 0;
 
-        MessageGenerator messageGenerator = new MatrixMessageGenerator(messageSize);
+        MessageController messageController = new MatrixMessageController(messageSize);
         connector = new ConnectToServer("connecting", SelectionKey.OP_WRITE, SelectionKey.OP_CONNECT);
-        writer = new WriteToServer("writing", SelectionKey.OP_READ, SelectionKey.OP_CONNECT, messageGenerator);
-        reader = new ReadFromServer("reading", SelectionKey.OP_WRITE, SelectionKey.OP_CONNECT, messageGenerator);
+        writer = new WriteToServer("writing", SelectionKey.OP_READ, SelectionKey.OP_CONNECT, messageController);
+        reader = new ReadFromServer("reading", SelectionKey.OP_WRITE, SelectionKey.OP_CONNECT, messageController);
     }
 
     @Override
@@ -50,8 +50,9 @@ public class Client implements Runnable {
     }
 
     private boolean interactWithServer(Selector selector) throws IOException {
-        if (selector.select(500) <= 0) {
-            return false;
+        int selectResult = selector.selectNow();
+        if (selectResult <= 0) {
+            return selectResult == 0;
         }
 
         Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
@@ -70,7 +71,7 @@ public class Client implements Runnable {
                 if (sentBytes != -1) {
                     counter++;
                     totalSentMessages.incrementAndGet();
-                    if (counter % 100 == 0) {
+                    if (counter % 1 == 0) {
                         System.out.println(MessageFormat.format("[thread {0}]: sent message #{1} ({2} bytes)",
                                 Thread.currentThread().getId(), counter, sentBytes));
                     }
