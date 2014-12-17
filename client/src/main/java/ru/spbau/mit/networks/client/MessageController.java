@@ -8,28 +8,28 @@ import java.util.Random;
 
 
 public class MessageController {
-    private byte[] clientData;
+    private byte[] clientData = null;
     private Random random = new Random();
 
-    public byte[] createMessage() {
-        int size = random.nextInt(100) + 200;
+
+    public byte[] getMessage() {
+        if (clientData == null) {
+            createMessage();
+        }
+        return clientData;
+    }
+
+    public void createMessage() {
+        int size = 50;
         ArrayList<Integer> data = new ArrayList<>();
         for (int i = 0; i < size * size; i++) {
             data.add(random.nextInt(100));
         }
 
-//        StringBuilder sb = new StringBuilder();
-//        for (int i = 0; i < 5; i++) {
-//            sb.append(i);
-//        }
-//        sb.append(System.lineSeparator());
-//        return sb.toString().getBytes();
-
         clientData = Matrix.newBuilder()
                 .addAllData(data)
                 .setRows(size)
                 .build().toByteArray();
-        return clientData;
     }
 
     public void decode(byte[] serverData) {

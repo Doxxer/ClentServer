@@ -1,5 +1,6 @@
 package ru.spbau.mit.networks.client;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 
 public class Main {
@@ -12,17 +13,31 @@ public class Main {
         int port = Integer.valueOf(args[1]);
         int threadsCount = Integer.valueOf(args[2]);
 
-//        new Client(host, port).run();
-
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             synchronized (threads) {
                 threads.forEach(Thread::interrupt);
             }
         }));
         for (int i = 0; i < threadsCount; i++) {
-            Thread thread = new Thread(new Client("192.168.0.104", 8888));
+            Thread thread = new Thread(new Client(host, port));
             threads.add(thread);
             thread.start();
         }
+        Thread totalMessagesSent = new Thread(() -> {
+            int oldSent = Client.totalSentMessages.get();
+            while (!Thread.interrupted()) {
+                int newSent = Client.totalSentMessages.get();
+                System.out.println(MessageFormat.format("MPS: {0}", newSent - oldSent));
+                oldSent = newSent;
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        });
+
+        threads.add(totalMessagesSent);
+        totalMessagesSent.start();
     }
 }
