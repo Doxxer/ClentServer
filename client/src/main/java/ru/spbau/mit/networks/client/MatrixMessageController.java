@@ -5,6 +5,7 @@ import ru.spbau.mit.networks.client.MatrixProtobufMessage.Matrix;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 
@@ -26,9 +27,9 @@ public class MatrixMessageController implements MessageController {
     }
 
     public void createMatrix() {
-        ArrayList<Integer> data = new ArrayList<>();
+        ArrayList<Double> data = new ArrayList<>();
         for (int i = 0; i < matrixSize * matrixSize; i++) {
-            data.add(random.nextInt(100));
+            data.add(random.nextDouble() * 20);
         }
 
         clientData = Matrix.newBuilder()
@@ -40,10 +41,12 @@ public class MatrixMessageController implements MessageController {
     @Override
     public void checkServerResponse(byte[] serverMessage) throws IOException {
         try {
+            System.out.println(Arrays.toString(clientData));
+            System.out.println(Arrays.toString(serverMessage));
             Jama.Matrix serverMatrix = getMatrix(serverMessage);
             Jama.Matrix clientMatrix = getMatrix(clientData);
 
-            if (!almostIdentity(serverMatrix.inverse().times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize)))) {
+            if (!almostIdentity(serverMatrix.times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize)))) {
                 throw new IOException("Wrong matrix response: input != output");
             }
         } catch (InvalidProtocolBufferException e) {
@@ -69,6 +72,6 @@ public class MatrixMessageController implements MessageController {
 
     private Jama.Matrix getMatrix(byte[] data) throws InvalidProtocolBufferException {
         Matrix matrix = Matrix.parseFrom(data);
-        return new Jama.Matrix(matrix.getDataList().stream().mapToDouble(Double::valueOf).toArray(), matrix.getRows());
+        return new Jama.Matrix(matrix.getDataList().stream().mapToDouble(d -> d).toArray(), matrix.getRows());
     }
 }
