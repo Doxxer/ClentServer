@@ -185,6 +185,12 @@ public class Server {
             final SocketChannel channel = pair.first;
             final byte[] data = pair.second;
 
+            if (data == null) {
+                logger.warning("Couldn't perform task for " + channel);
+                closeConnection(channel);
+                continue;
+            }
+
             try {
                 channel.register(selector, SelectionKey.OP_WRITE);
             } catch (ClosedChannelException e) {
