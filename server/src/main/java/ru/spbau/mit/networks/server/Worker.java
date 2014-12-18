@@ -1,8 +1,7 @@
 package ru.spbau.mit.networks.server;
 
-
 import com.google.protobuf.InvalidProtocolBufferException;
-import ru.spbau.mit.networks.client.MatrixProtobufMessage.Matrix;
+import ru.spbau.mit.networks.server.MatrixProtobufMessage.Matrix;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

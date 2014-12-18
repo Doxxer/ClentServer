@@ -1,4 +1,4 @@
-option java_package = "ru.spbau.mit.networks.client";
+option java_package = "ru.spbau.mit.networks.server";
 option java_outer_classname = "MatrixProtobufMessage";
 
 message Matrix {
