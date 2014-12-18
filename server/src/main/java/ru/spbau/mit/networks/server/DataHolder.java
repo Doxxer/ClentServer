@@ -3,25 +3,20 @@ package ru.spbau.mit.networks.server;
 import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Future;
 
 
 public class DataHolder {
     private final Map<SocketChannel, ResizableByteBuffer> receivedData;
     private final Map<SocketChannel, ByteBuffer> writingData;
-    private final Map<SocketChannel, Future<byte[]>> processingTasks;
-    private final ConcurrentLinkedQueue<SocketChannel> processedTasks;
+    private final ConcurrentLinkedQueue<Pair<SocketChannel, byte[]>> processed;
 
     {
         receivedData = new HashMap<>();
         writingData = new HashMap<>();
-        processingTasks = new HashMap<>();
-        processedTasks = new ConcurrentLinkedQueue<>();
+        processed = new ConcurrentLinkedQueue<>();
     }
 
     public void registerWriter(SocketChannel channel, byte[] data) {
@@ -39,37 +34,8 @@ public class DataHolder {
         writingData.remove(channel);
     }
 
-    public void registerWorker(SocketChannel channel, Future<byte[]> future) {
-        processingTasks.put(channel, future);
-    }
-
-    public Pair<byte[], SocketChannel> getProcessedData()
-            throws WorkerException {
-        List<SocketChannel> channels = new ArrayList<>();
-        Future<byte[]> future = null;
-        SocketChannel channel;
-
-        while ((channel = processedTasks.poll()) != null) {
-            future = processingTasks.get(channel);
-            assert future != null;
-            if (future.isDone()) {
-                break;
-            } else {
-                future = null;
-                channels.add(channel);
-            }
-        }
-
-        processedTasks.addAll(channels);
-        if (future == null) {
-            return null;
-        }
-        processingTasks.remove(channel);
-        try {
-            return new Pair<>(future.get(), channel);
-        } catch (Exception e) {
-            throw new WorkerException(channel, e);
-        }
+    public Pair<SocketChannel, byte[]> getProcessedData() {
+        return processed.poll();
     }
 
     public void registerReceiver(SocketChannel channel) {
@@ -105,8 +71,8 @@ public class DataHolder {
 
     public ServerNotifier createNotifier(
             SocketChannel channel, Selector selector) {
-        return () -> {
-            processedTasks.add(channel);
+        return data -> {
+            processed.add(new Pair<>(channel, data));
             selector.wakeup();
         };
     }

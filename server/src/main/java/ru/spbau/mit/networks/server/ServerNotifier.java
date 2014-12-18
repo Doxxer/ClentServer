@@ -2,5 +2,5 @@ package ru.spbau.mit.networks.server;
 
 
 public interface ServerNotifier {
-    void notifyServer();
+    void notifyServer(byte[] data);
 }

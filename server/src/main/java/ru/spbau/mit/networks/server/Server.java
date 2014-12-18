@@ -171,30 +171,19 @@ public class Server {
             return;
         }
 
-        Future<byte[]> future = executor.submit(new Worker(
+        executor.submit(new Worker(
                 dataHolder.extractReceivedData(channel),
                 dataHolder.createNotifier(channel, selector)));
-        dataHolder.registerWorker(channel, future);
     }
 
     private void processPerformedTasks() {
         while (true) {
-            byte[] data = null;
-            SocketChannel channel = null;
-            try {
-                Pair<byte[], SocketChannel> p = dataHolder.getProcessedData();
-                if (p != null) {
-                    data = p.first;
-                    channel = p.second;
-                }
-            } catch (WorkerException e) {
-                logger.warning("Worker error: " + e.getMessage());
-                closeConnection(e.getChannel());
-                continue;
-            }
-            if (data == null) {
+            Pair<SocketChannel, byte[]> pair = dataHolder.getProcessedData();
+            if (pair == null) {
                 return;
             }
+            final SocketChannel channel = pair.first;
+            final byte[] data = pair.second;
 
             try {
                 channel.register(selector, SelectionKey.OP_WRITE);

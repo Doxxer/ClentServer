@@ -1,9 +1,7 @@
 package ru.spbau.mit.networks.server;
 
-import java.util.concurrent.Callable;
 
-
-public class Worker implements Callable<byte[]> {
+public class Worker implements Runnable {
     private final byte[] data;
     private final ServerNotifier notifier;
 
@@ -13,8 +11,7 @@ public class Worker implements Callable<byte[]> {
     }
 
     @Override
-    public byte[] call() throws Exception {
-        notifier.notifyServer();
-        return data;
+    public void run() {
+        notifier.notifyServer(data);
     }
 }
