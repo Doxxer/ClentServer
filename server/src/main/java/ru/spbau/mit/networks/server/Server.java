@@ -13,7 +13,11 @@ import java.util.logging.Logger;
 public class Server {
     public static final int MAX_WAITING_TIME = 100;
     public static final int BUFFER_CAPACITY = 4096;
-    private static final Logger logger = Logger.getLogger(Server.class.getName());
+    private static final Logger logger;
+
+    static {
+        logger = Logger.getLogger(Server.class.getName());
+    }
 
     private final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
     private final ServerSocketChannel acceptor = ServerSocketChannel.open();
@@ -29,15 +33,9 @@ public class Server {
         acceptor.register(selector, SelectionKey.OP_ACCEPT);
     }
 
-    public void serve() {
+    public void serve() throws IOException {
         while (true) {
-            final int selected;
-            try {
-                selected = selector.select(MAX_WAITING_TIME);
-            } catch (IOException e) {
-                logger.severe("Critical error: couldn't perform selection");
-                return;
-            }
+            final int selected = selector.select(MAX_WAITING_TIME);
 
             processPerformedTasks();
 
@@ -124,7 +122,7 @@ public class Server {
     }
 
     private void processConnectable() {
-        System.err.println("Connectable");
+        assert false;
     }
 
     private void processAcceptable() {
@@ -207,6 +205,7 @@ public class Server {
             }
 
             logger.fine("Task for " + channel + "is performed");
+
             dataHolder.registerWriter(channel, data);
         }
     }

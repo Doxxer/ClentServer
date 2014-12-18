@@ -12,10 +12,17 @@ import java.util.concurrent.Future;
 
 
 public class DataHolder {
-    private final Map<SocketChannel, ResizableByteBuffer> receivedData = new HashMap<>();
-    private final Map<SocketChannel, ByteBuffer> writingData = new HashMap<>();
-    private final Map<SocketChannel, Future<byte[]>> processingTasks = new HashMap<>();
-    private final ConcurrentLinkedQueue<SocketChannel> processedTasks = new ConcurrentLinkedQueue<>();
+    private final Map<SocketChannel, ResizableByteBuffer> receivedData;
+    private final Map<SocketChannel, ByteBuffer> writingData;
+    private final Map<SocketChannel, Future<byte[]>> processingTasks;
+    private final ConcurrentLinkedQueue<SocketChannel> processedTasks;
+
+    {
+        receivedData = new HashMap<>();
+        writingData = new HashMap<>();
+        processingTasks = new HashMap<>();
+        processedTasks = new ConcurrentLinkedQueue<>();
+    }
 
     public void registerWriter(SocketChannel channel, byte[] data) {
         ByteBuffer buffer = ByteBuffer.wrap(data).asReadOnlyBuffer();
