@@ -67,22 +67,16 @@ public class Server {
         channel = (SocketChannel) key.channel();
         final ByteBuffer buffer = dataHolder.getWriterBuffer(channel);
 
-        while (buffer.hasRemaining()) {
-            final int byteCount;
-            try {
-                byteCount = channel.write(buffer);
-            } catch (IOException e) {
-                logger.warning("Writing error: " + e.getMessage());
-                closeConnection(channel);
-                return;
-            }
-
-            logger.fine("Sent " + byteCount + " bytes to " + channel);
-
-            if (byteCount == 0) {
-                break;
-            }
+        final int byteCount;
+        try {
+            byteCount = channel.write(buffer);
+        } catch (IOException e) {
+            logger.warning("Writing error: " + e.getMessage());
+            closeConnection(channel);
+            return;
         }
+
+        logger.fine("Sent " + byteCount + " bytes to " + channel);
 
         if (!buffer.hasRemaining()) {
             logger.fine("Connection " + channel + " is closed");
@@ -101,29 +95,26 @@ public class Server {
         final SocketChannel channel;
         channel = (SocketChannel) key.channel();
 
-        while (true) {
-            final int byteCount;
-            try {
-                byteCount = channel.read(buffer);
-            } catch (IOException e) {
-                logger.warning("Reading error: " + e.getMessage());
-                closeConnection(channel);
-                break;
-            }
-            if (byteCount < 0) {
-                buffer.clear();
-                closeConnection(channel);
-                return;
-            }
-            if (byteCount == 0) {
-                break;
-            }
-
-            buffer.flip();
-            dataHolder.moveReceivedData(channel, buffer);
-            buffer.flip();
+        final int byteCount;
+        try {
+            byteCount = channel.read(buffer);
+        } catch (IOException e) {
+            logger.warning("Reading error: " + e.getMessage());
+            closeConnection(channel);
+            buffer.clear();
+            return;
         }
-        buffer.clear();
+        if (byteCount < 0) {
+            closeConnection(channel);
+            return;
+        }
+        if (byteCount == 0) {
+            return;
+        }
+
+        buffer.flip();
+        dataHolder.moveReceivedData(channel, buffer);
+        buffer.flip();
 
         processReceivedData(channel);
     }
@@ -157,7 +148,7 @@ public class Server {
         Integer required = dataHolder.getFirstReceivedInteger(channel);
         int received = dataHolder.getReceivedByteCount(channel);
 
-        if (required == null || received < required) {
+        if (required == null || received < required + Integer.BYTES) {
             return;
         }
 
