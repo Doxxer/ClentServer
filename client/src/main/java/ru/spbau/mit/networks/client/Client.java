@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 
 public abstract class Client implements Runnable {
     public static final AtomicInteger totalSentMessages = new AtomicInteger(0);
+    protected final int reportFrequency;
     protected final String hostname;
     protected final int port;
     protected final ServerAction connector;
@@ -14,9 +15,10 @@ public abstract class Client implements Runnable {
     protected final ServerAction reader;
     protected int counter;
 
-    public Client(int port, String host, int messageSize) {
+    public Client(String host, int port, int messageSize, int reportFrequency) {
         this.port = port;
         this.hostname = host;
+        this.reportFrequency = reportFrequency;
         this.counter = 0;
 
         MessageController messageController = new MatrixMessageController(messageSize);

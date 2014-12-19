@@ -69,6 +69,8 @@
                         <argument>8888</argument>
                         <argument>1</argument>
                         <argument>20</argument>
+                        <argument>10</argument>
+                        <argument>n</argument>
                     </arguments>
                 </configuration>
             </plugin>

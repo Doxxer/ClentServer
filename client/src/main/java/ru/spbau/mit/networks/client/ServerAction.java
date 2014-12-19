@@ -16,9 +16,9 @@ public abstract class ServerAction {
         this.actionName = actionName;
     }
 
-    public int makeAction(SocketChannel socketChannel) throws ConnectException, WrongResponseException {
+    public int makeAction(SocketChannel channel) throws ConnectException, WrongResponseException {
         try {
-            int result = makeSocketAction(socketChannel);
+            int result = makeSocketAction(channel);
             if (actionFailed) {
                 actionFailed = false;
                 Logger.getGlobal().log(Level.INFO, MessageFormat.format("[thread {0}]: {1} OK", Thread.currentThread().getId(), actionName));
