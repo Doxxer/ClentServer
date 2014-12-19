@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 
 public class Server {
     public static final int MAX_WAITING_TIME = 100;
-    public static final int BUFFER_CAPACITY = 4096;
+    public static final int BUFFER_CAPACITY = 8192;
     private static final Logger logger;
 
     static {
