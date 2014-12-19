@@ -63,14 +63,12 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <executable>client</executable>
                     <mainClass>ru.spbau.mit.networks.client.Main</mainClass>
                     <arguments>
-                        <argument>192.168.0.106</argument>
-                        <!--<argument>127.0.0.1</argument>-->
+                        <argument>192.168.0.105</argument>
                         <argument>8888</argument>
-                        <argument>16</argument>
-                        <argument>200</argument>
+                        <argument>1</argument>
+                        <argument>20</argument>
                     </arguments>
                 </configuration>
             </plugin>

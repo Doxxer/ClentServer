@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
-
 public class MatrixMessageController implements MessageController {
     private final int matrixSize;
     private final Random random = new Random();
@@ -38,13 +37,13 @@ public class MatrixMessageController implements MessageController {
     }
 
     @Override
-    public void checkServerResponse(byte[] serverMessage) throws IOException {
+    public void validateServerResponse(byte[] serverMessage) throws IOException {
         try {
             Jama.Matrix serverMatrix = getMatrix(serverMessage);
             Jama.Matrix clientMatrix = getMatrix(clientData);
 
-            if (!almostIdentity(serverMatrix.times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize)))) {
-                throw new IllegalArgumentException("Wrong matrix response: input != output");
+            if (!almostIdentity(serverMatrix.inverse().times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize)))) {
+                throw new WrongResponseException("Wrong matrix response: input != output");
             }
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();

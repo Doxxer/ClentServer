@@ -2,34 +2,29 @@ package ru.spbau.mit.networks.client;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class ServerAction {
-    protected final int nextSocketState;
-    protected final int failingSocketState;
     private final String actionName;
     private boolean actionFailed;
 
-    public ServerAction(String actionName, int nextSocketState, int failingSocketState) {
+    public ServerAction(String actionName) {
         this.actionFailed = false;
         this.actionName = actionName;
-        this.nextSocketState = nextSocketState;
-        this.failingSocketState = failingSocketState;
     }
 
-    public int makeAction(SelectionKey key, Selector selector) throws ConnectException {
+    public int makeAction(SocketChannel socketChannel) throws ConnectException, WrongResponseException {
         try {
-            int result = makeSocketAction(key, selector);
+            int result = makeSocketAction(socketChannel);
             if (actionFailed) {
                 actionFailed = false;
                 Logger.getGlobal().log(Level.INFO, MessageFormat.format("[thread {0}]: {1} OK", Thread.currentThread().getId(), actionName));
             }
             return result;
-        } catch (IllegalArgumentException | ConnectException e) {
+        } catch (WrongResponseException | ConnectException e) {
             throw e;
         } catch (IOException e) {
             if (!actionFailed) {
@@ -41,5 +36,5 @@ public abstract class ServerAction {
         return -1;
     }
 
-    protected abstract int makeSocketAction(SelectionKey key, Selector selector) throws IOException;
+    protected abstract int makeSocketAction(SocketChannel channel) throws IOException;
 }

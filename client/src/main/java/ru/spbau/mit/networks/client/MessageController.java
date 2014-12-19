@@ -5,5 +5,5 @@ import java.io.IOException;
 public interface MessageController {
     byte[] createRequest();
 
-    void checkServerResponse(byte[] serverMessage) throws IOException;
+    void validateServerResponse(byte[] serverMessage) throws IOException;
 }

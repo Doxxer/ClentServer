@@ -2,29 +2,19 @@ package ru.spbau.mit.networks.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 public class WriteToServer extends ServerAction {
     private final MessageController messageController;
 
-    public WriteToServer(String actionName, int nextSocketState, int failingSocketState, MessageController messageController) {
-        super(actionName, nextSocketState, failingSocketState);
+    public WriteToServer(String actionName, MessageController messageController) {
+        super(actionName);
         this.messageController = messageController;
     }
 
     @Override
-    protected int makeSocketAction(SelectionKey key, Selector selector) throws IOException {
-        SocketChannel channel = (SocketChannel) key.channel();
-        try {
-            int sentBytes = writeToChannel(channel, messageController.createRequest());
-            channel.register(selector, nextSocketState);
-            return sentBytes;
-        } catch (IOException e) {
-            channel.register(selector, failingSocketState);
-            throw e;
-        }
+    protected int makeSocketAction(SocketChannel channel) throws IOException {
+        return writeToChannel(channel, messageController.createRequest());
     }
 
     private int writeToChannel(SocketChannel channel, byte[] message) throws IOException {
@@ -39,5 +29,4 @@ public class WriteToServer extends ServerAction {
         }
         return sentBytes;
     }
-
 }

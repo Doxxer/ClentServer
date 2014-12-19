@@ -25,9 +25,9 @@ public class Client implements Runnable {
         this.counter = 0;
 
         MessageController messageController = new MatrixMessageController(messageSize);
-        connector = new ConnectToServer("connecting", SelectionKey.OP_WRITE, SelectionKey.OP_CONNECT);
-        writer = new WriteToServer("writing", SelectionKey.OP_READ, SelectionKey.OP_CONNECT, messageController);
-        reader = new ReadFromServer("reading", SelectionKey.OP_WRITE, SelectionKey.OP_CONNECT, messageController);
+        connector = new ConnectToServer("connecting");
+        writer = new WriteToServer("writing", messageController);
+        reader = new ReadFromServer("reading", messageController);
     }
 
     @Override
@@ -40,7 +40,6 @@ public class Client implements Runnable {
                     clientChannel.register(selector, SelectionKey.OP_CONNECT);
 
                     while (interactWithServer(selector)) {
-//                        Thread.sleep(200);
                     }
                 }
             }
@@ -60,47 +59,49 @@ public class Client implements Runnable {
         while (iterator.hasNext()) {
             SelectionKey key = iterator.next();
             iterator.remove();
-
             if (!key.isValid()) {
                 continue;
             }
+
+            SocketChannel socketChannel = (SocketChannel) key.channel();
+
             if (key.isConnectable()) {
-                connector.makeAction(key, selector);
+                connector.makeAction(socketChannel);
+                socketChannel.register(selector, SelectionKey.OP_WRITE);
             } else if (key.isWritable()) {
-                int sentBytes = writer.makeAction(key, selector);
+                int sentBytes = writer.makeAction(socketChannel);
                 if (sentBytes != -1) {
+                    socketChannel.register(selector, SelectionKey.OP_READ);
                     counter++;
                     totalSentMessages.incrementAndGet();
-                    if (counter % 1 == 0) {
+                    if (counter % 10 == 0) {
                         System.out.println(MessageFormat.format("[thread {0}]: sent message #{1} ({2} bytes)",
                                 Thread.currentThread().getId(), counter, sentBytes));
                     }
+                } else {
+                    return false;
                 }
             } else if (key.isReadable()) {
-                return reader.makeAction(key, selector) != -1;
+                int readBytes = reader.makeAction(socketChannel);
+                if (readBytes != -1) {
+                    socketChannel.register(selector, SelectionKey.OP_WRITE);
+                } else {
+                    return false;
+                }
             }
         }
         return true;
     }
 
-//    @Override
-//    public void run() {
-//        try {
-//            while (!Thread.interrupted()) {
-//                try (SocketChannel clientChannel = SocketChannel.open();
-//                     Selector selector = Selector.open()) {
-//                    clientChannel.configureBlocking(false);
-//                    clientChannel.connect(new InetSocketAddress(hostname, port));
-//                    clientChannel.register(selector, SelectionKey.OP_CONNECT);
-//                    interactWithServer(selector);
-//                    interactWithServer(selector);
-//                    interactWithServer(selector);
-//                }
-//            }
-//        } catch (Exception e) {
-//            Logger.getGlobal().log(Level.SEVERE, e.createRequest());
-//        }
-//    }
+    //    private boolean blockingInteractingWithServer(SocketChannel channel) throws IOException {
+//        writeToChannel(channel, messageController.createRequest());
+//        totalSentMessages.incrementAndGet();
 //
+//        int messageLength = readFromChannel(channel, 4).getInt();
+//        ByteBuffer message = readFromChannel(channel, messageLength);
+//        messageController.validateServerResponse(message.array());
+//        return true;
+//    }
+
 
 }

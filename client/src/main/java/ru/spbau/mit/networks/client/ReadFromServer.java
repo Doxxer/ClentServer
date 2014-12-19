@@ -2,31 +2,22 @@ package ru.spbau.mit.networks.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 public class ReadFromServer extends ServerAction {
     private final MessageController messageController;
 
-    public ReadFromServer(String actionName, int nextSocketState, int failingSocketState, MessageController messageController) {
-        super(actionName, nextSocketState, failingSocketState);
+    public ReadFromServer(String actionName, MessageController messageController) {
+        super(actionName);
         this.messageController = messageController;
     }
 
     @Override
-    protected int makeSocketAction(SelectionKey key, Selector selector) throws IOException {
-        SocketChannel channel = (SocketChannel) key.channel();
-        try {
-            int messageLength = readFromChannel(channel, 4).getInt();
-            ByteBuffer message = readFromChannel(channel, messageLength);
-            messageController.checkServerResponse(message.array());
-            channel.register(selector, nextSocketState);
-            return -1;
-        } catch (IOException e) {
-            channel.register(selector, failingSocketState);
-            throw e;
-        }
+    protected int makeSocketAction(SocketChannel channel) throws IOException {
+        int messageLength = readFromChannel(channel, 4).getInt();
+        ByteBuffer message = readFromChannel(channel, messageLength);
+        messageController.validateServerResponse(message.array());
+        return messageLength;
     }
 
     private ByteBuffer readFromChannel(SocketChannel channel, int size) throws IOException {
