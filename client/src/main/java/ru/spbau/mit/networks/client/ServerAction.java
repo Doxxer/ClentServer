@@ -29,7 +29,7 @@ public abstract class ServerAction {
                 Logger.getGlobal().log(Level.INFO, MessageFormat.format("[thread {0}]: {1} OK", Thread.currentThread().getId(), actionName));
             }
             return result;
-        } catch (ConnectException e) {
+        } catch (IllegalArgumentException | ConnectException e) {
             throw e;
         } catch (IOException e) {
             if (!actionFailed) {

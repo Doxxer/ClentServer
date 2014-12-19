@@ -5,7 +5,6 @@ import ru.spbau.mit.networks.client.MatrixProtobufMessage.Matrix;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 
@@ -41,13 +40,11 @@ public class MatrixMessageController implements MessageController {
     @Override
     public void checkServerResponse(byte[] serverMessage) throws IOException {
         try {
-            System.out.println(Arrays.toString(clientData));
-            System.out.println(Arrays.toString(serverMessage));
             Jama.Matrix serverMatrix = getMatrix(serverMessage);
             Jama.Matrix clientMatrix = getMatrix(clientData);
 
             if (!almostIdentity(serverMatrix.times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize)))) {
-                throw new IOException("Wrong matrix response: input != output");
+                throw new IllegalArgumentException("Wrong matrix response: input != output");
             }
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
