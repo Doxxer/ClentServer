@@ -17,7 +17,7 @@ public class Main {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> threads.forEach(Thread::interrupt)));
 
         for (int i = 0; i < threadsCount; i++) {
-            Thread thread = new Thread(new Client(host, port, matrixSize));
+            Thread thread = new Thread(new BlockingClient(host, port, matrixSize));
             threads.add(thread);
             thread.start();
         }
