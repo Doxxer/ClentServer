@@ -86,7 +86,14 @@ public class Server {
 
         if (!buffer.hasRemaining()) {
             logger.fine("Connection " + channel + " is closed");
-            closeConnection(channel);
+            dataHolder.unregisterWriter(channel);
+            dataHolder.registerReceiver(channel);
+            try {
+                channel.register(selector, SelectionKey.OP_READ);
+            } catch (ClosedChannelException e) {
+                logger.warning("Channel " + channel + " error: " + channel);
+                closeConnection(channel);
+            }
         }
     }
 
