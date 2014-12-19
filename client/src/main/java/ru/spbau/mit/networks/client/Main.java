@@ -8,7 +8,7 @@ public class Main {
     private static final ArrayList<Thread> threads = new ArrayList<>();
 
     public static void main(String[] args) {
-        // socat -v tcp-l:8888,fork exec:'/bin/cat'
+        // socat tcp-l:8888,fork exec:'/bin/cat'
 
         String host = args[0];
         int port = Integer.valueOf(args[1]);
@@ -30,9 +30,12 @@ public class Main {
 
         Thread totalMessagesSent = new Thread(() -> {
             int oldSent = Client.totalSentMessages.get();
+            int time = 0;
             while (!Thread.interrupted()) {
                 int newSent = Client.totalSentMessages.get();
-                System.out.println(MessageFormat.format("MPS: {0}", newSent - oldSent));
+                int mps = time == 0 ? 0 : newSent / time;
+                System.out.println(MessageFormat.format("MPS: {0} (last second = {1})", mps, newSent - oldSent));
+                time += 1;
                 oldSent = newSent;
                 try {
                     Thread.sleep(1000);
