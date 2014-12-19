@@ -42,9 +42,9 @@ public class MatrixMessageController implements MessageController {
             Jama.Matrix serverMatrix = getMatrix(serverMessage);
             Jama.Matrix clientMatrix = getMatrix(clientData);
 
-//            if (!almostIdentity(serverMatrix.inverse().times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize)))) {
-//                throw new WrongResponseException("Wrong matrix response: input != output");
-//            }
+            if (!almostIdentity(serverMatrix.times(clientMatrix).minus(Jama.Matrix.identity(matrixSize, matrixSize)))) {
+                throw new WrongResponseException("Wrong matrix response: input != output");
+            }
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
             System.exit(1);

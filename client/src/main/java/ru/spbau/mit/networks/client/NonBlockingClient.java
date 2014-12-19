@@ -47,8 +47,11 @@ public class NonBlockingClient extends Client {
             SocketChannel channel = (SocketChannel) key.channel();
 
             if (key.isConnectable()) {
-                connector.makeAction(channel);
-                channel.register(selector, SelectionKey.OP_WRITE);
+                if (connector.makeAction(channel) != -1) {
+                    channel.register(selector, SelectionKey.OP_WRITE);
+                } else {
+                    return false;
+                }
             } else if (key.isWritable()) {
                 int sentBytes = writer.makeAction(channel);
                 if (sentBytes != -1) {
