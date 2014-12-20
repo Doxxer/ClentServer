@@ -34,10 +34,9 @@ public class Main {
             while (!Thread.interrupted()) {
                 int totalMessages = Client.totalSentMessages.get();
                 int mps = tick == 0 ? 0 : totalMessages / tick;
-                long totalTime = Client.totalTime.get();
-                double awt = totalMessages == 0 ? 0 : ((totalTime / 1000) / 1000.0) / totalMessages;
+                double awt = totalMessages == 0 ? 0 : ((Client.totalTime.get() / 1000) / 1000.0) / totalMessages;
 
-                System.out.print(MessageFormat.format("Total messages = {0} | Total time wasted = {1} ns | ", totalMessages, totalTime));
+                System.out.print(MessageFormat.format("Total messages = {0} | ", totalMessages));
                 System.out.print(MessageFormat.format("MPS: {0} (last second = {1}) | ", mps, totalMessages - oldSent));
                 System.out.print(MessageFormat.format("AWT: {0} ms\n", awt));
 

@@ -70,8 +70,8 @@
                         <!--<argument>127.0.0.1</argument>-->
                         <argument>8888</argument>
                         <argument>1</argument>
-                        <argument>200</argument>
-                        <argument>1</argument>
+                        <argument>20</argument>
+                        <argument>0</argument>
                         <argument>b</argument>
                     </arguments>
                 </configuration>

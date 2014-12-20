@@ -32,8 +32,6 @@ public class BlockingClient extends Client {
     private void interactWithServer(SocketChannel channel) throws WrongResponseException, ConnectException, InteractionException {
         writer.makeAction(channel);
         reader.makeAction(channel);
-        totalSentMessages.incrementAndGet();
-        totalTime.addAndGet(reader.timestamp - writer.timestamp);
         updateStatistics();
     }
 }

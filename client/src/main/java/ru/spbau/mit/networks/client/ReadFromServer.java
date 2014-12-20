@@ -17,7 +17,7 @@ public class ReadFromServer extends ServerAction {
         messageLength = readFromChannel(channel, 4).getInt();
         this.timestamp = System.nanoTime();
         ByteBuffer message = readFromChannel(channel, messageLength);
-        messageController.validateServerResponse(message.array());
+//        messageController.validateServerResponse(message.array());
     }
 
     private ByteBuffer readFromChannel(SocketChannel channel, int size) throws IOException {
