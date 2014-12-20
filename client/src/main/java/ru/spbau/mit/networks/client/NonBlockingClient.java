@@ -1,11 +1,12 @@
 package ru.spbau.mit.networks.client;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.text.MessageFormat;
 import java.util.Iterator;
 
 public class NonBlockingClient extends Client {
@@ -22,19 +23,21 @@ public class NonBlockingClient extends Client {
             clientChannel.register(selector, SelectionKey.OP_CONNECT);
 
             while (true) {
-                if (!interactWithServer(selector)) {
+                try {
+                    if (selector.select(500) >= 0) {
+                        interactWithServer(selector);
+                    } else {
+                        break;
+                    }
+                } catch (InteractionException ignored) {
+                    // if Interaction exception occurred - just break and retry again
                     break;
-                }
+                } // else: go out and close thread
             }
         }
     }
 
-    private boolean interactWithServer(Selector selector) throws IOException {
-        int selectResult = selector.select(500);
-        if (selectResult <= 0) {
-            return selectResult == 0;
-        }
-
+    private void interactWithServer(Selector selector) throws WrongResponseException, ConnectException, ClosedChannelException, InteractionException {
         Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
 
         while (iterator.hasNext()) {
@@ -45,35 +48,17 @@ public class NonBlockingClient extends Client {
             }
 
             SocketChannel channel = (SocketChannel) key.channel();
-
             if (key.isConnectable()) {
-                if (connector.makeAction(channel) != -1) {
-                    channel.register(selector, SelectionKey.OP_WRITE);
-                } else {
-                    return false;
-                }
+                connector.makeAction(channel);
+                channel.register(selector, SelectionKey.OP_WRITE);
             } else if (key.isWritable()) {
-                int sentBytes = writer.makeAction(channel);
-                if (sentBytes != -1) {
-                    channel.register(selector, SelectionKey.OP_READ);
-                    counter++;
-                    totalSentMessages.incrementAndGet();
-                    if (counter % reportFrequency == 0) {
-                        System.out.println(MessageFormat.format("[thread {0}]: sent message #{1} ({2} bytes)",
-                                Thread.currentThread().getId(), counter, sentBytes));
-                    }
-                } else {
-                    return false;
-                }
+                writer.makeAction(channel);
+                channel.register(selector, SelectionKey.OP_READ);
             } else if (key.isReadable()) {
-                int readBytes = reader.makeAction(channel);
-                if (readBytes != -1) {
-                    channel.register(selector, SelectionKey.OP_WRITE);
-                } else {
-                    return false;
-                }
+                reader.makeAction(channel);
+                channel.register(selector, SelectionKey.OP_WRITE);
+                updateStatistics();
             }
         }
-        return true;
     }
 }

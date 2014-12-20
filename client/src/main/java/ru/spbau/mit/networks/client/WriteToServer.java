@@ -13,8 +13,9 @@ public class WriteToServer extends ServerAction {
     }
 
     @Override
-    protected int makeSocketAction(SocketChannel channel) throws IOException {
-        return writeToChannel(channel, messageController.createRequest());
+    protected void makeSocketAction(SocketChannel channel) throws IOException {
+        this.messageLength = writeToChannel(channel, messageController.createRequest());
+        this.timestamp = System.nanoTime();
     }
 
     private int writeToChannel(SocketChannel channel, byte[] message) throws IOException {

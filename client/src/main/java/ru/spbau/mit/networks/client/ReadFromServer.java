@@ -13,11 +13,11 @@ public class ReadFromServer extends ServerAction {
     }
 
     @Override
-    protected int makeSocketAction(SocketChannel channel) throws IOException {
-        int messageLength = readFromChannel(channel, 4).getInt();
+    protected void makeSocketAction(SocketChannel channel) throws IOException {
+        messageLength = readFromChannel(channel, 4).getInt();
+        this.timestamp = System.nanoTime();
         ByteBuffer message = readFromChannel(channel, messageLength);
         messageController.validateServerResponse(message.array());
-        return messageLength;
     }
 
     private ByteBuffer readFromChannel(SocketChannel channel, int size) throws IOException {

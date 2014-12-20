@@ -10,10 +10,9 @@ public class ConnectToServer extends ServerAction {
     }
 
     @Override
-    protected int makeSocketAction(SocketChannel channel) throws IOException {
+    protected void makeSocketAction(SocketChannel channel) throws IOException {
         if (channel.isConnectionPending()) {
             channel.finishConnect();
         }
-        return 0;
     }
 }

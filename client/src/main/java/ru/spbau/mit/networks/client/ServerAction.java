@@ -9,32 +9,42 @@ import java.util.logging.Logger;
 
 public abstract class ServerAction {
     private final String actionName;
-    private boolean actionFailed;
+    protected long timestamp;
+    protected int messageLength;
+    private boolean actionFailedBefore;
 
     public ServerAction(String actionName) {
-        this.actionFailed = false;
+        this.actionFailedBefore = false;
         this.actionName = actionName;
+        this.timestamp = 0;
     }
 
-    public int makeAction(SocketChannel channel) throws ConnectException, WrongResponseException {
+    public void makeAction(SocketChannel channel) throws ConnectException, WrongResponseException, InteractionException {
         try {
-            int result = makeSocketAction(channel);
-            if (actionFailed) {
-                actionFailed = false;
+            makeSocketAction(channel);
+            if (actionFailedBefore) {
+                actionFailedBefore = false;
                 Logger.getGlobal().log(Level.INFO, MessageFormat.format("[thread {0}]: {1} OK", Thread.currentThread().getId(), actionName));
             }
-            return result;
         } catch (WrongResponseException | ConnectException e) {
             throw e;
         } catch (IOException e) {
-            if (!actionFailed) {
-                actionFailed = true;
+            if (!actionFailedBefore) {
+                actionFailedBefore = true;
                 Logger.getGlobal().log(Level.WARNING, MessageFormat.format("[thread {0}]: {1} FAILED: {2}",
                         Thread.currentThread().getId(), actionName, e.toString()));
             }
+            throw new InteractionException(e);
         }
-        return -1;
     }
 
-    protected abstract int makeSocketAction(SocketChannel channel) throws IOException;
+    protected abstract void makeSocketAction(SocketChannel channel) throws IOException;
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public int getMessageLength() {
+        return messageLength;
+    }
 }

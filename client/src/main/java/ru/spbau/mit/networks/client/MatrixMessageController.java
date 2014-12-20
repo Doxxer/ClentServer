@@ -31,8 +31,8 @@ public class MatrixMessageController implements MessageController {
         }
 
         clientData = Matrix.newBuilder()
-                .addAllData(data)
-                .setRows(matrixSize)
+                .addAllMatrixData(data)
+                .setMatrixSize(matrixSize)
                 .build().toByteArray();
     }
 
@@ -68,6 +68,6 @@ public class MatrixMessageController implements MessageController {
 
     private Jama.Matrix getMatrix(byte[] data) throws InvalidProtocolBufferException {
         Matrix matrix = Matrix.parseFrom(data);
-        return new Jama.Matrix(matrix.getDataList().stream().mapToDouble(d -> d).toArray(), matrix.getRows());
+        return new Jama.Matrix(matrix.getMatrixDataList().stream().mapToDouble(d -> d).toArray(), matrix.getMatrixSize());
     }
 }
