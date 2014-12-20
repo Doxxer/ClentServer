@@ -10,12 +10,12 @@ import java.util.logging.Logger;
 public abstract class Client implements Runnable {
     public static final AtomicInteger totalSentMessages = new AtomicInteger(0);
     public static final AtomicLong totalTime = new AtomicLong(0);
-    protected final int reportFrequency;
     protected final String hostname;
     protected final int port;
     protected final ServerAction connector;
     protected final ServerAction writer;
     protected final ServerAction reader;
+    private final int reportFrequency;
     private int localCounter;
 
     public Client(String host, int port, int messageSize, int reportFrequency) {

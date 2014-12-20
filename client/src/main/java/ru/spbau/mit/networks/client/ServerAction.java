@@ -40,10 +40,6 @@ public abstract class ServerAction {
 
     protected abstract void makeSocketAction(SocketChannel channel) throws IOException;
 
-    public long getTimestamp() {
-        return timestamp;
-    }
-
     public int getMessageLength() {
         return messageLength;
     }
