@@ -28,15 +28,20 @@ public class Main {
             thread.start();
         }
 
-        Thread totalMessagesSent = new Thread(() -> {
+        Thread threadManager = new Thread(() -> {
             int oldSent = Client.totalSentMessages.get();
-            int time = 0;
+            int tick = 0;
             while (!Thread.interrupted()) {
-                int newSent = Client.totalSentMessages.get();
-                int mps = time == 0 ? 0 : newSent / time;
-                System.out.println(MessageFormat.format("MPS: {0} (last second = {1})", mps, newSent - oldSent));
-                time += 1;
-                oldSent = newSent;
+                int totalMessages = Client.totalSentMessages.get();
+                int mps = tick == 0 ? 0 : totalMessages / tick;
+                double awt = totalMessages == 0 ? 0 : ((Client.totalTime.get() / 1000) / 1000.0) / totalMessages;
+
+                System.out.print(MessageFormat.format("Total messages = {0} | ", totalMessages));
+                System.out.print(MessageFormat.format("MPS: {0} (last second = {1}) | ", mps, totalMessages - oldSent));
+                System.out.print(MessageFormat.format("AWT: {0} ms\n", awt));
+
+                tick += 1;
+                oldSent = totalMessages;
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -45,8 +50,8 @@ public class Main {
             }
         });
 
-        totalMessagesSent.setDaemon(true);
-        threads.add(totalMessagesSent);
-        totalMessagesSent.start();
+        threadManager.setDaemon(true);
+        threads.add(threadManager);
+        threadManager.start();
     }
 }

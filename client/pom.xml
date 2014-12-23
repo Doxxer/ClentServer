@@ -66,11 +66,12 @@
                     <killAfter>-1</killAfter>
                     <mainClass>ru.spbau.mit.networks.client.Main</mainClass>
                     <arguments>
-                        <argument>192.168.0.105</argument>
+                        <argument>192.168.0.106</argument>
+                        <!--<argument>127.0.0.1</argument>-->
                         <argument>8888</argument>
-                        <argument>8</argument>
-                        <argument>10</argument>
-                        <argument>100</argument>
+                        <argument>1</argument>
+                        <argument>20</argument>
+                        <argument>0</argument>
                         <argument>b</argument>
                     </arguments>
                 </configuration>
