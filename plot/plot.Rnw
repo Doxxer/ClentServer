@@ -1,0 +1,50 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage[russian]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[left=2cm,right=1cm,
+    top=1cm,bottom=2cm,bindingoffset=0cm]{geometry}
+
+\title{Сети. Клиент и сервер}
+\date{}
+\author{Богдан Бугаев, Тимур Тураев}
+
+\begin{document}
+\maketitle
+
+\section*{Графики}
+
+<<echo=FALSE, message=FALSE>>=
+library(lattice)
+library(gridExtra)
+
+
+my.plot <- function(filename) {
+    p1 <- xyplot(time_in_ms ~ number_of_clients,
+                 data=read.csv(filename), type="b")
+    p2 <- xyplot(time_in_ms ~ log2(number_of_clients),
+                 data=read.csv(filename), type="b")
+    grid.arrange(p1, p2)
+}
+@
+
+\begin{itemize}
+\item Сервер с пулом на восемь потоков, матрица $10 \times 10$, просто
+нахождение обратной матрицы.
+<<echo=FALSE>>=
+my.plot("csv/s8-m10-o3.csv")
+@
+
+\item Сервер с пулом на 16 потоков, матрица $20 \times 20$, нахождение обратной
+матрицы 100 раз.
+<<echo=FALSE>>=
+my.plot("csv/s16-m20-o5.csv")
+@
+
+\item Сервер с пулом на 16 потоков, матрица $10 \times 10$, нахождение обратной
+матрицы 100 раз.
+<<echo=FALSE>>=
+my.plot("csv/s16-m10-o5.csv")
+@
+\end{itemize}
+
+\end{document}
