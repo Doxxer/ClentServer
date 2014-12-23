@@ -23,8 +23,13 @@ public class Worker implements Runnable {
         byte[] result = null;
         try {
             final Jama.Matrix matrix = parseMatrix(data);
-            final Jama.Matrix invMatrix = matrix.inverse();
-            result = packMatrix(invMatrix);
+            Jama.Matrix invMatrix = matrix.inverse();
+            for (int i = 0; i < matrix.getRowDimension(); i++) {
+                for (int j = 0; j < matrix.getColumnDimension(); j++) {
+                    invMatrix = matrix.inverse();
+                }
+            }
+            result = packDet(invMatrix.det());
         } catch (InvalidProtocolBufferException ignored) {
         }
         notifier.notifyServer(result);
@@ -40,22 +45,11 @@ public class Worker implements Runnable {
         return new Jama.Matrix(doubles, tmp.getRows());
     }
 
-    private byte[] packMatrix(Jama.Matrix matrix) {
-        List<Double> doubles = new ArrayList<>(matrix.getRowDimension()
-                * matrix.getColumnDimension());
-        for (double d: matrix.getColumnPackedCopy()) {
-            doubles.add(d);
-        }
-        byte[] matrixBytes = Matrix.newBuilder()
-                .addAllData(doubles)
-                .setRows(matrix.getRowDimension())
-                .build().toByteArray();
-
-        byte[] result = new byte[Integer.BYTES + matrixBytes.length];
+    private byte[] packDet(double det) {
+        byte[] result = new byte[Integer.BYTES + Double.BYTES];
         ByteBuffer buffer = ByteBuffer.wrap(result);
-        buffer.putInt(matrixBytes.length);
-        buffer.put(matrixBytes);
-
+        buffer.putInt(Double.BYTES);
+        buffer.putDouble(det);
         return result;
     }
 }

@@ -65,7 +65,7 @@
           <mainClass>ru.spbau.mit.networks.server.Main</mainClass>
           <arguments>
             <argument>8888</argument>
-            <argument>8</argument>
+            <argument>16</argument>
           </arguments>
         </configuration>
       </plugin>
