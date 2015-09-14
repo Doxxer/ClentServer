@@ -21,9 +21,13 @@ library(gridExtra)
 my.plot <- function(filename) {
     p1 <- xyplot(time_in_ms ~ number_of_clients,
                  data=read.csv(filename), type="b")
-    p2 <- xyplot(time_in_ms ~ log2(number_of_clients),
+    p2 <- xyplot((time_in_ms) ~ log2(number_of_clients),
                  data=read.csv(filename), type="b")
-    grid.arrange(p1, p2)
+    p3 <- xyplot(log2(time_in_ms) ~ (number_of_clients),
+                 data=read.csv(filename), type="b")
+    p4 <- xyplot(log2(time_in_ms) ~ log2(number_of_clients),
+                 data=read.csv(filename), type="b")
+    grid.arrange(p1, p2, p3, p4)
 }
 @
 
